@@ -6,7 +6,7 @@ Check it out in action at [shuttles.rpi.edu](https://shuttles.rpi.edu).
 
 ## Documentation
 
-[API](docs/api.md)
+[API](docs/API.md)
 
 ## Setting up
 
