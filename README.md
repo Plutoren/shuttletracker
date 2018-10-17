@@ -4,6 +4,10 @@ Tracking and mapping RPI's shuttles with [Go](https://golang.org/), [Vue.js](htt
 
 Check it out in action at [shuttles.rpi.edu](https://shuttles.rpi.edu).
 
+## Documentation
+
+[API](docs/api.md)
+
 ## Setting up
 
 1. [Install Go](https://golang.org/doc/install). Shuttle Tracker targets Go 1.7 and newer, but we recommend using the latest Go stable release.
