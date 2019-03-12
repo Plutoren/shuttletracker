@@ -1,4 +1,5 @@
 /conf.json
-/vendor/*/
 /coverage.txt
 /shuttletracker
+/static/*
+/shuttletracker.exe

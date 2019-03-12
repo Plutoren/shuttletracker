@@ -32,6 +32,7 @@ type API struct {
 	ms      shuttletracker.ModelService
 	msg     shuttletracker.MessageService
 	updater *updater.Updater
+	fm      *fusionManager
 }
 
 // New initializes the application given a config and connects to backends.
@@ -43,12 +44,16 @@ func New(cfg Config, ms shuttletracker.ModelService, msg shuttletracker.MessageS
 		return nil, err
 	}
 
+	// Set up fusion manager
+	fm := newFusionManager()
+
 	// Create API instance to store database session and collections
 	api := API{
 		cfg:     cfg,
 		ms:      ms,
 		msg:     msg,
 		updater: updater,
+		fm:      fm,
 	}
 
 	r := chi.NewRouter()
@@ -72,6 +77,11 @@ func New(cfg Config, ms shuttletracker.ModelService, msg shuttletracker.MessageS
 	// Updates
 	r.Route("/updates", func(r chi.Router) {
 		r.Get("/", api.UpdatesHandler)
+	})
+
+	// History
+	r.Route("/history", func(r chi.Router) {
+		r.Get("/", api.HistoryHandler)
 	})
 
 	// Admin message
@@ -104,11 +114,14 @@ func New(cfg Config, ms shuttletracker.ModelService, msg shuttletracker.MessageS
 		})
 	})
 
+	// Fusion
+	r.Mount("/fusion", api.fm.router(cli.casauth))
+
 	r.Get("/logout/", cli.logout)
 	// Admin
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(cli.casauth)
-		r.Get("/", api.AdminHandler)
+		r.Get("/*", api.AdminHandler)
 		r.Get("/login", api.AdminHandler)
 		r.Get("/logout", cli.logout)
 	})
@@ -118,9 +131,12 @@ func New(cfg Config, ms shuttletracker.ModelService, msg shuttletracker.MessageS
 		r.Get("/getKey/", api.KeyHandler)
 	})
 
-	// Static files
-	r.Get("/", IndexHandler)
 	r.Method("GET", "/static/*", http.StripPrefix("/static/", http.FileServer(staticFileSystem{http.Dir("static/")})))
+
+	r.Get("/", api.IndexHandler)
+	r.Get("/about", api.IndexHandler)
+	r.Get("/schedules", api.IndexHandler)
+	r.Get("/settings", api.IndexHandler)
 
 	// iTRAK data feed endpoint
 	r.Get("/datafeed", api.DataFeedHandler)
@@ -145,11 +161,12 @@ func (api *API) Run() {
 	if err := http.ListenAndServe(api.cfg.ListenURL, api.handler); err != nil {
 		log.WithError(err).Error("Unable to serve.")
 	}
+
 }
 
 // IndexHandler serves the index page.
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "index.html")
+func (api *API) IndexHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "static/index.html")
 }
 
 // AdminHandler serves the admin page.
@@ -160,7 +177,7 @@ func (api *API) AdminHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin", 301)
 	}
 	w.Header().Set("Cache-Control", "no-cache")
-	http.ServeFile(w, r, "admin.html")
+	http.ServeFile(w, r, "static/admin.html")
 
 }
 
